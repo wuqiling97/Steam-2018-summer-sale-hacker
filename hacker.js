@@ -13,7 +13,7 @@
 // @include         https://steamcommunity.com/saliengame/play
 // @include         https://steamcommunity.com/saliengame/play/
 //
-// @version         1.2.1
+// @version         1.2.2
 // @updateURL       https://coding.net/u/maplerecall/p/steam-2018-summer-game-hack/git/raw/master/index.user.js
 //
 // @run-at          document-start|document-end
@@ -35,7 +35,7 @@
     let currentZone
     let fireTarget
 	// SG, braid 波斯王子, osmos
-    let specialPlanets = ['视觉小说星', '时间操控星', '放松星二号', ];
+    let specialPlanets = ['视觉小说星', '时间操控星', '放松星二号',];
 
     if ($output.length === 0) {
         let $dogeBody = $('<div>').css({
@@ -68,9 +68,7 @@
             let planet
             if(active_planet) {
             	log('Leaving planet and choose new one');
-            	currentGame = active_planet;
-            	await stop();
-            	running = true;
+            	await $.post(`https://community.steam-api.com/IMiniGameService/LeaveGame/v0001/`, `access_token=${token}&gameid=${active_planet}`)
             }
             // joining planet
             log(`Joining planet...`)
@@ -87,6 +85,8 @@
             		planet = p;
             	}
             }
+            if(priority !== 100)
+                log('Found special planets');
             await $.post(`${gameUrlPrefix}/JoinPlanet/v0001/`, `id=${planet.id}&access_token=${token}`)
             
 
