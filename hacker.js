@@ -36,6 +36,7 @@
     let fireTarget
 	// SG, braid 波斯王子, osmos
     let specialPlanets = ['视觉小说星', '时间操控星', '放松星二号',];
+    let battleTime = 0;
 
     if ($output.length === 0) {
         let $dogeBody = $('<div>').css({
@@ -66,28 +67,33 @@
             }
 
             let planet
-            if(active_planet) {
+            if(active_planet && battleTime === 0) {
             	log('Leaving planet and choose new one');
             	await $.post(`https://community.steam-api.com/IMiniGameService/LeaveGame/v0001/`, `access_token=${token}&gameid=${active_planet}`)
+                battleTime = 10;
+                log('battle time back to 10');
             }
-            // joining planet
-            log(`Joining planet...`)
-            fireTarget = null
-            var { response: { planets } } = await $.get(`${gameUrlPrefix}/GetPlanets/v0001/?active_only=1&language=schinese`)
-            console.log(planets)
-            planet = planets.sort((a, b) => a.state.capture_progress - b.state.capture_progress)[0]
-            // check special planets
-            let priority = 100;
-            for(let p of planets) {
-            	let idx = specialPlanets.indexOf(p.state.name);
-            	if(idx >= 0 && idx < priority) {
-            		priority = idx;
-            		planet = p;
-            	}
+            if(!active_planet || (active_planet && battleTime === 0)) {
+                // joining planet
+                log(`Joining planet...`)
+                fireTarget = null
+                var { response: { planets } } = await $.get(`${gameUrlPrefix}/GetPlanets/v0001/?active_only=1&language=schinese`)
+                console.log(planets)
+                planet = planets.sort((a, b) => a.state.capture_progress - b.state.capture_progress)[0]
+                // check special planets
+                let priority = 100;
+                for(let p of planets) {
+                    let idx = specialPlanets.indexOf(p.state.name);
+                    if(idx >= 0 && idx < priority) {
+                        priority = idx;
+                        planet = p;
+                    }
+                }
+                if(priority !== 100)
+                    log('Found special planets');
+                await $.post(`${gameUrlPrefix}/JoinPlanet/v0001/`, `id=${planet.id}&access_token=${token}`) 
             }
-            if(priority !== 100)
-                log('Found special planets');
-            await $.post(`${gameUrlPrefix}/JoinPlanet/v0001/`, `id=${planet.id}&access_token=${token}`)
+            log(`remain battle time: ${battleTime}`);
             
 
             var { response: { planets } } = await $.get(`${gameUrlPrefix}/GetPlanet/v0001/?id=${active_planet}&language=schinese`)
@@ -133,6 +139,7 @@
             if (response['new_score']) {
                 log(`Send score success, new score: ${response['new_score']}.`)
                 gameTimer = setTimeout(joinGame, 100)
+                battleTime--;
             } else {
                 throw 'Service reject.'
             }
