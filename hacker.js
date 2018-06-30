@@ -34,7 +34,7 @@
     let $output = $('#dogeOutput')
     let currentZone
     let fireTarget
-	// SG, braid 波斯王子, osmos
+    // SG, braid 波斯王子, osmos
     let specialPlanets = ['视觉小说星', '时间操控星', '放松星二号',];
     let battleTime = 0;
 
@@ -56,8 +56,9 @@
         try {
             log(`Fetch info...`)
             var { response } = await $.post(`${gameUrlPrefix}/GetPlayerInfo/v0001/`, `access_token=${token}`)
-            const { active_planet, level, score: _score, next_level_score, active_zone_game, clan_info } = response
-            // console.log(response)
+            const { active_planet, level, score: _score, next_level_score, active_zone_game, clan_info} = response
+            let time_on_planet = response.time_on_planet;
+            console.log(response)
             if (active_zone_game) {
                 log('Alreay in a game, try to leave...')
                 await $.post(`https://community.steam-api.com/IMiniGameService/LeaveGame/v0001/`, `access_token=${token}&gameid=${active_zone_game}`)
@@ -68,10 +69,8 @@
 
             let planet
             if(active_planet && battleTime === 0) {
-            	log('Leaving planet and choose new one');
-            	await $.post(`https://community.steam-api.com/IMiniGameService/LeaveGame/v0001/`, `access_token=${token}&gameid=${active_planet}`)
-                battleTime = 10;
-                log('battle time back to 10');
+                log('Leaving planet and choose new one');
+                await $.post(`https://community.steam-api.com/IMiniGameService/LeaveGame/v0001/`, `access_token=${token}&gameid=${active_planet}`)
             }
             if(!active_planet || (active_planet && battleTime === 0)) {
                 // joining planet
@@ -92,13 +91,19 @@
                 if(priority !== 100)
                     log('Found special planets');
                 await $.post(`${gameUrlPrefix}/JoinPlanet/v0001/`, `id=${planet.id}&access_token=${token}`) 
+                battleTime = 10;
+                log('battle time back to 10');
+                var {response} = await $.post(`${gameUrlPrefix}/GetPlayerInfo/v0001/`, `access_token=${token}`)
+                time_on_planet = response.time_on_planet;
             }
             log(`remain battle time: ${battleTime}`);
             
 
             var { response: { planets } } = await $.get(`${gameUrlPrefix}/GetPlanet/v0001/?id=${active_planet}&language=schinese`)
             planet = planets[0]
-            log(`Planet: ${planet.state.name}  Level: ${level}  Exp: ${_score}/${next_level_score}  Team: ${clan_info ? clan_info.name : 'None'}`)
+            time_on_planet = parseInt(time_on_planet);
+            let strtime = parseInt( time_on_planet / 3600 ) + ':' +  parseInt( ( time_on_planet % 3600 ) / 60 ) + ':' +  time_on_planet % 60;
+            log(`Planet: ${planet.state.name} Spend: ${strtime} Level: ${level}  Exp: ${_score}/${next_level_score}  Team: ${clan_info ? clan_info.name : 'None'}`)
 
             let zones = planet.zones.filter(({ captured }) => !captured)
             let targetZone = zones.find(({ zone_position }) => zone_position === fireTarget)
